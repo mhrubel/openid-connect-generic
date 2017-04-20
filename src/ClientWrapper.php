@@ -1,6 +1,8 @@
 <?php
 
-class OpenID_Connect_Generic_Client_Wrapper {
+namespace OpenIdConnectGeneric;
+
+class ClientWrapper {
 	
 	private $client;
 	
@@ -16,18 +18,18 @@ class OpenID_Connect_Generic_Client_Wrapper {
 	// user redirect cookie key
 	public $cookie_redirect_key = 'openid-connect-generic-redirect';
 
-	// WP_Error if there was a problem, or false if no error
+	// \WP_Error if there was a problem, or false if no error
 	private $error = false;
 
 	
 	/**
 	 * Inject necessary objects and services into the client
 	 * 
-	 * @param \OpenID_Connect_Generic_Client $client
-	 * @param \WP_Option_Settings $settings
-	 * @param \WP_Option_Logger $logger
+	 * @param Client $client
+	 * @param Settings $settings
+	 * @param Logger $logger
 	 */
-	function __construct( OpenID_Connect_Generic_Client $client, WP_Option_Settings $settings, WP_Option_Logger $logger ){
+	function __construct( Client $client, Settings $settings, Logger $logger ){
 		$this->client = $client;
 		$this->settings = $settings;
 		$this->logger = $logger;
@@ -36,13 +38,13 @@ class OpenID_Connect_Generic_Client_Wrapper {
 	/**
 	 * Hook the client into WP
 	 *
-	 * @param \OpenID_Connect_Generic_Client $client
-	 * @param \WP_Option_Settings $settings
-	 * @param \WP_Option_Logger $logger
+	 * @param Client $client
+	 * @param Settings $settings
+	 * @param Logger $logger
 	 *
-	 * @return \OpenID_Connect_Generic_Client_Wrapper
+	 * @return ClientWrapper
 	 */
-	static public function register( OpenID_Connect_Generic_Client $client, WP_Option_Settings $settings, WP_Option_Logger $logger ){
+	static public function register( Client $client, Settings $settings, Logger $logger ){
 		$client_wrapper  = new self( $client, $settings, $logger );
 		
 		// remove cookies on logout
@@ -137,7 +139,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 		if ( ! isset( $_COOKIE[ $this->cookie_token_refresh_key] ) ) {
 			wp_logout();
-			$this->error_redirect( new WP_Error( 'token-refresh-cookie-missing', __( 'Single sign-on cookie missing. Please login again.' ), $_COOKIE ) );
+			$this->error_redirect( new \WP_Error( 'token-refresh-cookie-missing', __( 'Single sign-on cookie missing. Please login again.' ), $_COOKIE ) );
 			exit;
 		}
 
@@ -147,7 +149,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 		if ( ! $refresh_token_info ) {
 			wp_logout();
-			$this->error_redirect( new WP_Error( 'token-refresh-cookie-missing', __( 'Single sign-on cookie invalid. Please login again.' ), $_COOKIE ) );
+			$this->error_redirect( new \WP_Error( 'token-refresh-cookie-missing', __( 'Single sign-on cookie invalid. Please login again.' ), $_COOKIE ) );
 		}
 
 		$next_access_token_refresh_time = $refresh_token_info[ 'next_access_token_refresh_time' ];
@@ -159,7 +161,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 		if ( ! $refresh_token ) {
 			wp_logout();
-			$this->error_redirect( new WP_Error( 'access-token-expired', __( 'Session expired. Please login again.' ) ) );
+			$this->error_redirect( new \WP_Error( 'access-token-expired', __( 'Session expired. Please login again.' ) ) );
 		}
 
 		$token_result = $this->client->request_new_tokens( $refresh_token );
@@ -183,7 +185,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 	 * Handle errors by redirecting the user to the login form
 	 *  along with an error code
 	 *
-	 * @param $error WP_Error
+	 * @param $error \WP_Error
 	 */
 	function error_redirect( $error ) {
 		$this->logger->log( $error );
@@ -200,7 +202,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 	/**
 	 * Get the current error state
 	 *
-	 * @return bool | WP_Error
+	 * @return bool | \WP_Error
 	 */
 	function get_error(){
 		return $this->error;
@@ -408,14 +410,14 @@ class OpenID_Connect_Generic_Client_Wrapper {
 	/**
 	 * Validate the potential WP_User 
 	 * 
-	 * @param $user
+	 * @param $user \WP_User
 	 *
 	 * @return true|\WP_Error
 	 */
 	function validate_user( $user ){
 		// ensure our found user is a real WP_User
 		if ( ! is_a( $user, 'WP_User' ) || ! $user->exists() ) {
-			return new WP_Error( 'invalid-user', __( 'Invalid user' ), $user );
+			return new \WP_Error( 'invalid-user', __( 'Invalid user' ), $user );
 		}
 		
 		return true;
@@ -423,8 +425,12 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 	/**
 	 * Record user meta data, and provide an authorization cookie
-	 * 
+	 *
 	 * @param $user
+	 * @param $token_response
+	 * @param $id_token_claim
+	 * @param $user_claim
+	 * @param $subject_identity
 	 */
 	function login_user( $user, $token_response, $id_token_claim, $user_claim, $subject_identity ){
 		// hey, we made it!
@@ -485,7 +491,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 			return $cookie_value;
 		}
-		catch ( Exception $e ) {
+		catch ( \Exception $e ) {
 			$this->logger->log( $e->getMessage() );
 			return false;
 		}
@@ -505,7 +511,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		try {
 			$user_encryption_key = \Defuse\Crypto\Key::loadFromAsciiSafeString( $existing_key_string );
 		}
-		catch ( Exception $e ) {
+		catch ( \Exception $e ) {
 			$this->logger->log( "Error loading user {$user_id} refresh token cookie key, generating new: " . $e->getMessage() );
 			$user_encryption_key = \Defuse\Crypto\Key::createNewRandomKey();
 			update_user_meta( $user_id, $meta_key, $user_encryption_key->saveToAsciiSafeString() );
@@ -523,7 +529,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 	 */
 	function get_user_by_identity( $subject_identity ){
 		// look for user by their openid-connect-generic-subject-identity value
-		$user_query = new WP_User_Query( array(
+		$user_query = new \WP_User_Query( array(
 			'meta_query' => array(
 				array(
 					'key'   => 'openid-connect-generic-subject-identity',
@@ -565,7 +571,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		}
 		else {
 			// nothing to build a name from
-			return new WP_Error( 'no-username', __( 'No appropriate username found' ), $user_claim );
+			return new \WP_Error( 'no-username', __( 'No appropriate username found' ), $user_claim );
 		}
 
 		// normalize the data a bit
@@ -620,7 +626,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 				$string .= substr( $format, $i, $match[ 1 ] - $i );
 				if ( ! isset( $user_claim[ $key ] ) ) {
 					if ( $error_on_missing_key ) {
-						return new WP_Error( 'incomplete-user-claim', __( 'User claim incomplete' ), $user_claim );
+						return new \WP_Error( 'incomplete-user-claim', __( 'User claim incomplete' ), $user_claim );
 					}
 				} else {
 					$string .= $user_claim[ $key ];
@@ -712,7 +718,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 			// make sure we didn't get an error
 			if ( is_wp_error( $user_claim_result ) ) {
-				return new WP_Error( 'bad-user-claim-result', __( 'Bad user claim result' ), $user_claim_result );
+				return new \WP_Error( 'bad-user-claim-result', __( 'Bad user claim result' ), $user_claim_result );
 			}
 
 			$user_claim = json_decode( $user_claim_result['body'], TRUE );
@@ -763,7 +769,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		$create_user = apply_filters( 'openid-connect-generic-user-creation-test', TRUE, $user_claim );
 
 		if ( ! $create_user ) {
-			return new WP_Error( 'cannot-authorize', __( 'Can not authorize.' ), $create_user );
+			return new \WP_Error( 'cannot-authorize', __( 'Can not authorize.' ), $create_user );
 		}
 
 		// create the new user
@@ -781,7 +787,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 		// make sure we didn't fail in creating the user
 		if ( is_wp_error( $uid ) ) {
-			return new WP_Error( 'failed-user-creation', __( 'Failed user creation.' ), $uid );
+			return new \WP_Error( 'failed-user-creation', __( 'Failed user creation.' ), $uid );
 		}
 
 		// retrieve our new user

@@ -1,25 +1,52 @@
 <?php
 
-class OpenID_Connect_Generic_Settings_Page {
+namespace OpenIdConnectGeneric;
 
-	// local copy of the settings provided by the base plugin
+class SettingsPage {
+
+	/**
+	 * Local copy of the settings provided by the base plugin
+	 *
+	 * @var \OpenIdConnectGeneric\Settings
+	 */
 	private $settings;
 
-	// The controlled list of settings & associated
-	// defined during construction for i18n reasons
+	/**
+	 * Local reference to the logging utility
+	 *
+	 * @var \OpenIdConnectGeneric\Logger
+	 */
+	private $logger;
+
+	/**
+	 * The controlled list of settings & associated data
+	 * defined during construction for i18n reasons
+	 *
+	 * @var array
+	 */
 	private $settings_fields = array();
 
-	// options page slug
+	/**
+	 * Admin page slug
+	 *
+	 * @var string
+	 */
 	private $options_page_name = 'openid-connect-generic-settings';
 
-	// options page settings group name
+	/**
+	 * Admin page settings group name
+	 *
+	 * @var string
+	 */
 	private $settings_field_group;
 
 	/**
-	 * @param \WP_Option_Settings $settings
-	 * @param \WP_Option_Logger $logger
+	 * Constructor
+	 *
+	 * @param Settings $settings
+	 * @param Logger $logger
 	 */
-	function __construct( WP_Option_Settings $settings, WP_Option_Logger $logger ) {
+	function __construct( Settings $settings, Logger $logger ) {
 		$this->settings             = $settings;
 		$this->logger               = $logger;
 		$this->settings_field_group = $this->settings->get_option_name() . '-group';
@@ -190,12 +217,14 @@ class OpenID_Connect_Generic_Settings_Page {
 	}
 
 	/**
-	 * @param \WP_Option_Settings $settings
-	 * @param \WP_Option_Logger $logger
+	 * Register wp hooks
 	 *
-	 * @return \OpenID_Connect_Generic_Settings_Page
+	 * @param Settings $settings
+	 * @param Logger $logger
+	 *
+	 * @return $this
 	 */
-	static public function register( WP_Option_Settings $settings, WP_Option_Logger $logger ){
+	static public function register( Settings $settings, Logger $logger ){
 		$settings_page = new self( $settings, $logger );
 
 		// add our options page the the admin menu

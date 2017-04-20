@@ -1,6 +1,8 @@
 <?php
 
-class OpenID_Connect_Generic_Client {
+namespace OpenIdConnectGeneric;
+
+class Client {
 
 	private $client_id;
 	private $client_secret;
@@ -63,22 +65,22 @@ class OpenID_Connect_Generic_Client {
 	function validate_authentication_request( $request ){
 		// look for an existing error of some kind
 		if ( isset( $request['error'] ) ) {
-			return new WP_Error( 'unknown-error', 'An unknown error occurred.', $request );
+			return new \WP_Error( 'unknown-error', 'An unknown error occurred.', $request );
 		}
 
 		// make sure we have a legitimate authentication code and valid state
 		if ( ! isset( $request['code'] ) ) {
-			return new WP_Error( 'no-code', 'No authentication code present in the request.', $request );
+			return new \WP_Error( 'no-code', 'No authentication code present in the request.', $request );
 		}
 
-		// check the client request state 
+		// check the client request state
 		if ( ! isset( $request['state'] ) || ! $this->check_state( $request['state'] ) ){
-			return new WP_Error( 'missing-state', __( 'Missing state.' ), $request );
+			return new \WP_Error( 'missing-state', __( 'Missing state.' ), $request );
 		}
 
 		return $request;
 	}
-	
+
 	/**
 	 * Get the authorization code from the request
 	 *
@@ -94,7 +96,7 @@ class OpenID_Connect_Generic_Client {
 	 * Using the authorization_code, request an authentication token from the idp
 	 *
 	 * @param $code - authorization_code
-	 * 
+	 *
 	 * @return array|\WP_Error
 	 */
 	function request_authentication_token( $code ) {
@@ -124,7 +126,7 @@ class OpenID_Connect_Generic_Client {
 		if ( is_wp_error( $response ) ){
 			$response->add( 'request_authentication_token' , __( 'Request for authentication token failed.' ) );
 		}
-		
+
 		return $response;
 	}
 
@@ -166,7 +168,7 @@ class OpenID_Connect_Generic_Client {
 	 */
 	function get_token_response( $token_result ){
 		if ( ! isset( $token_result['body'] ) ){
-			return new WP_Error( 'missing-token-body', __( 'Missing token body.' ), $token_result );
+			return new \WP_Error( 'missing-token-body', __( 'Missing token body.' ), $token_result );
 		}
 
 		// extract token response from token
@@ -178,18 +180,18 @@ class OpenID_Connect_Generic_Client {
 			if ( isset( $token_response[ 'error_description' ] ) ) {
 				$error_description = $token_response[ 'error_description' ];
 			}
-			return new WP_Error( $error, $error_description, $token_result );
+			return new \WP_Error( $error, $error_description, $token_result );
 		}
 
 		return $token_response;
 	}
 
-	
+
 	/**
 	 * Exchange an access_token for a user_claim from the userinfo endpoint
 	 *
 	 * @param $access_token
-	 * 
+	 *
 	 * @return array|\WP_Error
 	 */
 	function request_userinfo( $access_token ) {
@@ -220,7 +222,7 @@ class OpenID_Connect_Generic_Client {
 		if ( is_wp_error( $response ) ){
 			$response->add( 'request_userinfo' , __( 'Request for userinfo failed.' ) );
 		}
-		
+
 		return $response;
 	}
 
@@ -247,7 +249,7 @@ class OpenID_Connect_Generic_Client {
 	 * Check the validity of a given state
 	 *
 	 * @param $state
-	 * 
+	 *
 	 * @return bool
 	 */
 	function check_state( $state ) {
@@ -276,7 +278,7 @@ class OpenID_Connect_Generic_Client {
 
 	/**
 	 * Ensure that the token meets basic requirements
-	 * 
+	 *
 	 * @param $token_response
 	 *
 	 * @return bool|\WP_Error
@@ -287,15 +289,15 @@ class OpenID_Connect_Generic_Client {
 		if ( ! isset( $token_response['id_token'] ) || ! isset( $token_response['access_token'] ) ||
 		     ! isset( $token_response['token_type'] ) || strcasecmp( $token_response['token_type'], 'Bearer' )
 		) {
-			return new WP_Error( 'invalid-token-response', 'Invalid token response', $token_response );
+			return new \WP_Error( 'invalid-token-response', 'Invalid token response', $token_response );
 		}
-		
+
 		return true;
 	}
 
 	/**
 	 * Extract the id_token_claim from the token_response
-	 * 
+	 *
 	 * @param $token_response
 	 *
 	 * @return array|\WP_Error
@@ -303,47 +305,47 @@ class OpenID_Connect_Generic_Client {
 	function get_id_token_claim( $token_response ){
 		// name sure we have an id_token
 		if ( ! isset( $token_response['id_token'] ) ) {
-			return new WP_Error( 'no-identity-token', __( 'No identity token' ), $token_response );
+			return new \WP_Error( 'no-identity-token', __( 'No identity token' ), $token_response );
 		}
 
 		// break apart the id_token in the response for decoding
 		$tmp = explode( '.', $token_response['id_token'] );
 
 		if ( ! isset( $tmp[1] ) ) {
-			return new WP_Error( 'missing-identity-token', __( 'Missing identity token' ), $token_response );
+			return new \WP_Error( 'missing-identity-token', __( 'Missing identity token' ), $token_response );
 		}
 
 		// Extract the id_token's claims from the token
 		$id_token_claim = json_decode( base64_decode( $tmp[1] ), TRUE );
-		
+
 		return $id_token_claim;
 	}
 
 	/**
 	 * Ensure the id_token_claim contains the required values
-	 * 
+	 *
 	 * @param $id_token_claim
 	 *
 	 * @return bool|\WP_Error
 	 */
 	function validate_id_token_claim( $id_token_claim ){
 		if ( ! is_array( $id_token_claim ) ) {
-			return new WP_Error( 'bad-id-token-claim', __( 'Bad ID token claim' ), $id_token_claim );
+			return new \WP_Error( 'bad-id-token-claim', __( 'Bad ID token claim' ), $id_token_claim );
 		}
-		
+
 		// make sure we can find our identification data and that it has a value
 		if ( ! isset( $id_token_claim['sub'] ) || empty( $id_token_claim['sub'] ) ) {
-			return new WP_Error( 'no-subject-identity', __( 'No subject identity' ), $id_token_claim );
+			return new \WP_Error( 'no-subject-identity', __( 'No subject identity' ), $id_token_claim );
 		}
-		
+
 		return true;
 	}
 
 	/**
 	 * Attempt to exchange the access_token for a user_claim
-	 * 
+	 *
 	 * @param $token_response
-	 * 
+	 *
 	 * @return array|mixed|object|\WP_Error
 	 */
 	function get_user_claim( $token_response ){
@@ -352,18 +354,18 @@ class OpenID_Connect_Generic_Client {
 
 		// make sure we didn't get an error, and that the response body exists
 		if ( is_wp_error( $user_claim_result ) || ! isset( $user_claim_result['body'] ) ) {
-			return new WP_Error( 'bad-claim', __( 'Bad user claim' ), $user_claim_result );
+			return new \WP_Error( 'bad-claim', __( 'Bad user claim' ), $user_claim_result );
 		}
 
 		$user_claim = json_decode( $user_claim_result['body'], TRUE );
 
 		return $user_claim;
 	}
-	
+
 	/**
 	 * Make sure the user_claim has all required values, and that the subject
 	 * identity matches of the id_token matches that of the user_claim.
-	 * 
+	 *
 	 * @param $user_claim
 	 * @param $id_token_claim
 	 *
@@ -372,19 +374,19 @@ class OpenID_Connect_Generic_Client {
 	function validate_user_claim( $user_claim, $id_token_claim ) {
 		// must be an array
 		if ( ! is_array( $user_claim ) ){
-			return new WP_Error( 'invalid-user-claim', __( 'Invalid user claim' ), $user_claim );
+			return new \WP_Error( 'invalid-user-claim', __( 'Invalid user claim' ), $user_claim );
 		}
-		
+
 		// make sure the id_token sub === user_claim sub, according to spec
 		if ( $id_token_claim['sub' ] !== $user_claim['sub'] ) {
-			return new WP_Error( 'incorrect-user-claim', __( 'Incorrect user claim' ), func_get_args() );
+			return new \WP_Error( 'incorrect-user-claim', __( 'Incorrect user claim' ), func_get_args() );
 		}
 
 		// allow for other plugins to alter the login success
 		$login_user = apply_filters( 'openid-connect-generic-user-login-test', TRUE, $user_claim );
-		
+
 		if ( ! $login_user ) {
-			return new WP_Error( 'unauthorized', __( 'Unauthorized access' ), $login_user );
+			return new \WP_Error( 'unauthorized', __( 'Unauthorized access' ), $login_user );
 		}
 		
 		return true;

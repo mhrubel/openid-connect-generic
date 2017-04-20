@@ -1,13 +1,22 @@
 <?php
 
-class OpenID_Connect_Generic_Login_Form {
+namespace OpenIdConnectGeneric;
 
+class LoginForm {
+
+	/**
+	 * @var \OpenIdConnectGeneric\Settings
+	 */
 	private $settings;
+
+	/**
+	 * @var \OpenIdConnectGeneric\ClientWrapper
+	 */
 	private $client_wrapper;
 
 	/**
-	 * @param $settings
-	 * @param $client_wrapper
+	 * @param $settings Settings
+	 * @param $client_wrapper ClientWrapper
 	 */
 	function __construct( $settings, $client_wrapper ){
 		$this->settings = $settings;
@@ -15,10 +24,12 @@ class OpenID_Connect_Generic_Login_Form {
 	}
 
 	/**
-	 * @param $settings
-	 * @param $client_wrapper
+	 * Register wp hooks
 	 *
-	 * @return \OpenID_Connect_Generic_Login_Form
+	 * @param $settings Settings
+	 * @param $client_wrapper ClientWrapper
+	 *
+	 * @return LoginForm
 	 */
 	static public function register( $settings, $client_wrapper ){
 		$login_form = new self( $settings, $client_wrapper );
@@ -137,7 +148,7 @@ class OpenID_Connect_Generic_Login_Form {
 		return ob_get_clean();
 	}
 
-	/*
+	/**
 	 * Removes the login form from the HTML DOM
 	 */
 	function remove_login_form() {
