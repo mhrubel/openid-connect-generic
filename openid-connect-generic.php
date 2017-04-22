@@ -47,8 +47,8 @@ openid_connect_generic_bootstrap();
  * Instantiate the plugin and hook into WP
  */
 function openid_connect_generic_bootstrap(){
-	spl_autoload_register( 'openid_connect_generic_autoload' );
-
+	require __DIR__.'/vendor/autoload.php';
+	
 	$settings = new Settings(
 		'openid_connect_generic_settings',
 		// default settings values
@@ -85,35 +85,4 @@ function openid_connect_generic_bootstrap(){
 	$logger = new Logger( 'openid-connect-generic-logs', 'error', $settings->enable_logging, $settings->log_limit );
 
 	$plugin = Plugin::register( $settings, $logger );
-}
-
-/**
- * Simple autoloader
- *
- * @param $class
- */
-function openid_connect_generic_autoload( $class ) {
-	// project-specific namespace prefix
-	$prefix = 'OpenIdConnectGeneric\\';
-
-	// relative class name is the class minus the defined prefix
-	if ( stripos( $class, $prefix ) === 0 ) {
-		$class = substr($class, strlen($prefix));
-	}
-
-
-	// base directory for the namespace prefix
-	$base_dirs = array(
-		__DIR__ . '/src/',
-		__DIR__ . '/vendor/'
-	);
-
-	foreach( $base_dirs as $base_dir ){
-		$file = $base_dir . str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
-
-		// if the file exists, require it
-		if (file_exists($file)) {
-			require $file;
-		}
-	}
 }

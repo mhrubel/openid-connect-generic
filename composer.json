@@ -1,0 +1,19 @@
+{
+  "name": "daggerhart/openid-connect-generic",
+  "description": "WordPress plugin that provides Oauth2 SSO or opt-in authentication of site users.",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Jonathan Daggerhart",
+      "email": "jonathan@daggerhart.com"
+    }
+  ],
+  "require": {
+    "defuse/php-encryption": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "OpenIdConnectGeneric\\": "src/"
+    }
+  }
+}
